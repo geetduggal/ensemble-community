@@ -1,0 +1,90 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{color}
+
+\title{Efficient $\Delta Q$}
+\author{Geet Duggal}
+\date{Spring 2007ish}
+\begin{document}
+\maketitle
+
+One of our concerns is being able to calculate the 
+modularity efficiently on each Monte Carlo move\footnote{This first revision
+also includes a C implementation that calculates the modularity 
+given an edge and partition file: \texttt{./Q graph.edg nodes.par}. The
+partition file simply associates a node with a community ID in the same format
+of the edge file.}.  Modularity can be
+conveniently expressed as \cite{cnm-community}:
+\begin{equation}
+Q = \displaystyle\sum_{i \in C}(e_{ii}-a_i^2)
+\end{equation}
+where $C$ is the set of communities
+This essentially amounts
+to being able to efficiently keep track changes in these two variables:
+\begin{equation}
+\label{edgefrac}
+e_{ii} = \frac{1}{2m}\displaystyle\sum_{vw}A_{vw}\delta(c_v, i)\delta(c_w, i)\\
+\end{equation}
+\begin{equation}
+\label{rootprob}
+a_i = \frac{1}{2m}\displaystyle\sum_vk_v\delta(c_v, i)
+\end{equation}
+reminding ourselves that $m$ is the number of edges in the undirected graph,
+$c_v$ indicates vertex $v$ belongs to community $c_v$, and $A_{vw}$ is the
+adjacency matrix.  Stated in simpler terms, modularity is capturing
+the total fraction of within-community edges subtracted
+from what we would expect from a random graph for that community 
+\emph{for all} communities.
+
+Given that changes in modularity ($\Delta Q$) in the Metropolis Monte Carlo 
+scheme described in \cite{massen-doye-community} involve changing the community assigned
+to a random node, the change in modularity is only caused by that node and
+the two communities it affects.  Aside from the case where the node does
+not change its community, we can explore how to efficiently recalculate 
+the modularity from the previous value.  
+
+Suppose the two communities in the comparison  are $i$ and $j$, 
+where we move $v'$ from $i$ to $j$: 
+\begin{enumerate}
+\item the change in equation (\ref{edgefrac}) involves subtracting
+      the number of edges 
+      from $i$ associated with $v'$ ($E_{iv'}$) and
+      adding the number of edges to $j$ that are now newly associated
+      with $v'$, ($E_{jv'})$.
+\item the change in equation (\ref{rootprob}) involves properly 
+      subtracting $k_{v'}$ from community $i$'s square term and adding it 
+      to community $j$'s square term.  
+\end{enumerate}
+Since item 1 has no ugly squares: 
+\begin{eqnarray*}
+  \Delta e = e_{ii}(t+1) - e_{ii}(t) = \frac{1}{m}(E_{jv'} - E_{iv'})
+\end{eqnarray*} 
+But for item 2, we have:
+\begin{eqnarray*}
+  a_i(t) = \frac{1}{2m}\displaystyle\sum_vk_v\delta(c_v, i)\\
+  a_j(t) = \frac{1}{2m}\displaystyle\sum_vk_v\delta(c_v, j)\\
+  a_i(t+1) = a_i(t) - \frac{1}{2m}k_{v'}\\
+  a_j(t+1) = a_j(t) + \frac{1}{2m}k_{v'}\\
+  \Delta a^2 = \left[[a_j(t+1)]^2+[a_i(t+1)]^2\right] - 
+              \left[[a_j(t)]^2+[a_i(t)]^2\right]\\
+            = \left[\left(a_j(t) + \frac{1}{2m}k_{v'}\right)^2+
+                    \left(a_i(t) - \frac{1}{2m}k_{v'}\right)^2\right] -
+                    \left[[(a_j(t)]^2+[a_i(t)]^2\right]\\
+            = \left[\frac{1}{4m^2}k_{v'}^2+\frac{1}{m}a_j(t)k_{v'} +
+                    \frac{1}{4m^2}k_{v'}^2-\frac{1}{m}a_i(t)k_{v'} \right]\\
+            = \frac{k_{v'}}{m}
+              \left(\frac{k_{v'}}{2m}+a_j(t)-a_i(t)\right)
+\end{eqnarray*}
+
+Thus, after some basic algebra, we can express our change in modularity
+as a simple operation by only storing a few running sums in memory:
+\begin{equation}
+  \Delta Q = \frac{1}{m}\left[(E_{jv'} - E_{iv'}) - k_{v'}
+             \left(\frac{k_{v'}}{2m}+a_j(t)-a_i(t)\right)\right]
+\end{equation}
+recalling that we are transferring $v'$ from community $i$ to $j$. 
+$\diamond$
+
+\bibliographystyle{plain}
+\bibliography{rlib}
+\end{document}

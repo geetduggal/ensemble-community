@@ -1,0 +1,28 @@
+ensemble-community is a small project that provides C and R-project
+interfaces for community detection with ensemble-based algorithms.
+These methods are intended to interface with the igraph package.
+
+The algorithm included in this initial commit is a variant of the 
+implementation described in Massen and Doye's paper:  
+
+CP Massen and JPK Doye. "Thermodynamics of community structure".
+http://arxiv.org/abs/cond-mat/0610077.
+
+In the effdQ.pdf file, there is some basic algebra that allows each
+Monte-Carlo step to be performed quite fast with the appropriate data
+structures.  Each step scales on the order of the community size.
+
+Versions:
+
+2009-03-17. This particular implementation is a stripped-down lightweight
+            version of code I wrote a while back.  It can get optimal
+            communities on sparse networks of 10K nodes in hours on a
+            2.4 GHz Intel processor. 
+
+Goals:
+
+- The next release should have an initial igraph interface as well
+- Create a suite of ensemble and set-based utilites that will aid in
+  analysis. I have created a few in the past, but it will be nice to
+  have ones I can use directly within R.
+- At some point, try to contribute the code/add it to the igraph release.
